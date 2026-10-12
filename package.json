@@ -1,14 +1,29 @@
 {
-  "name": "kilo-mcp-image-patch",
-  "displayName": "Kilo MCP Image Patch",
-  "description": "Patches the Kilo Code chat webview so MCP tool results (read_image, browser screenshots) render image attachments inline, one per row with its path.",
-  "version": "0.0.3",
-  "publisher": "local",
+  "name": "kilo-qol-patch",
+  "displayName": "Kilo QoL Patch",
+  "description": "Quality-of-life patcher for the Kilo Code chat webview. Renders MCP tool-result images (read_image, browser screenshots) inline, one per row with its path, plus a status-bar indicator and auto-apply.",
+  "version": "0.1.0",
+  "publisher": "darkbyte",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/darkbytemonolith-rgb/kilo-qol-patch.git"
+  },
+  "bugs": {
+    "url": "https://github.com/darkbytemonolith-rgb/kilo-qol-patch/issues"
+  },
   "engines": {
     "vscode": "^1.80.0"
   },
   "categories": [
     "Other"
+  ],
+  "keywords": [
+    "kilo",
+    "kilo code",
+    "mcp",
+    "patch",
+    "images"
   ],
   "activationEvents": [
     "onStartupFinished"
@@ -17,31 +32,31 @@
   "contributes": {
     "commands": [
       {
-        "command": "kiloMcpImagePatch.apply",
-        "title": "Kilo MCP Image Patch: Apply / Re-apply"
+        "command": "kiloQolPatch.apply",
+        "title": "Kilo QoL Patch: Apply / Re-apply"
       },
       {
-        "command": "kiloMcpImagePatch.remove",
-        "title": "Kilo MCP Image Patch: Remove (restore original)"
+        "command": "kiloQolPatch.remove",
+        "title": "Kilo QoL Patch: Remove (restore original)"
       },
       {
-        "command": "kiloMcpImagePatch.status",
-        "title": "Kilo MCP Image Patch: Status"
+        "command": "kiloQolPatch.status",
+        "title": "Kilo QoL Patch: Status"
       },
       {
-        "command": "kiloMcpImagePatch.menu",
-        "title": "Kilo MCP Image Patch: Open Menu"
+        "command": "kiloQolPatch.menu",
+        "title": "Kilo QoL Patch: Open Menu"
       }
     ],
     "configuration": {
-      "title": "Kilo MCP Image Patch",
+      "title": "Kilo QoL Patch",
       "properties": {
-        "kiloMcpImagePatch.autoApply": {
+        "kiloQolPatch.autoApply": {
           "type": "boolean",
           "default": true,
           "description": "Automatically apply the patch on startup and after a Kilo Code update replaces the webview. When off, you will be asked before applying."
         },
-        "kiloMcpImagePatch.showStatusBar": {
+        "kiloQolPatch.showStatusBar": {
           "type": "boolean",
           "default": true,
           "description": "Show a status bar indicator for the patch state."
