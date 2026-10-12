@@ -1,8 +1,8 @@
 {
   "name": "kilo-qol-patch",
   "displayName": "Kilo QoL Patch",
-  "description": "Quality-of-life patcher for the Kilo Code chat webview. Renders MCP tool-result images (read_image, browser screenshots) inline, one per row with its path, plus a status-bar indicator and auto-apply.",
-  "version": "0.1.0",
+  "description": "Quality-of-life patcher for the Kilo Code chat webview: renders MCP tool-result images (read_image, browser screenshots) inline with their paths, and lets chat content fill the panel width. Includes a status-bar indicator and auto-apply.",
+  "version": "0.2.0",
   "publisher": "darkbyte",
   "license": "MIT",
   "repository": {
@@ -23,7 +23,8 @@
     "kilo code",
     "mcp",
     "patch",
-    "images"
+    "images",
+    "qol"
   ],
   "activationEvents": [
     "onStartupFinished"
@@ -60,6 +61,11 @@
           "type": "boolean",
           "default": true,
           "description": "Show a status bar indicator for the patch state."
+        },
+        "kiloQolPatch.fillChatWidth": {
+          "type": "boolean",
+          "default": true,
+          "description": "Let chat messages fill the full panel width instead of the default ~98ch readable column (removes the left/right gaps)."
         }
       }
     }
