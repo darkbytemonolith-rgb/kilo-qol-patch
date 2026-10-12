@@ -12,10 +12,11 @@ function cfg() {
   return {
     autoApply: c.get("autoApply", true),
     showStatusBar: c.get("showStatusBar", true),
+    fillChatWidth: c.get("fillChatWidth", true),
   };
 }
 
-function findWebview() {
+function kiloDistDir() {
   const candidates = [];
   const ext = vscode.extensions.getExtension("kilocode.kilo-code");
   if (ext && ext.extensionPath) candidates.push(ext.extensionPath);
@@ -32,10 +33,21 @@ function findWebview() {
     } catch (_) {}
   }
   for (const base of candidates) {
-    const p = path.join(base, "dist", "webview.js");
-    if (fs.existsSync(p)) return p;
+    if (fs.existsSync(path.join(base, "dist", "webview.js")))
+      return path.join(base, "dist");
   }
   return undefined;
+}
+
+function findWebview() {
+  const d = kiloDistDir();
+  return d ? path.join(d, "webview.js") : undefined;
+}
+function findWebviewCss() {
+  const d = kiloDistDir();
+  if (!d) return undefined;
+  const p = path.join(d, "webview.css");
+  return fs.existsSync(p) ? p : undefined;
 }
 
 function inspect() {
@@ -56,11 +68,41 @@ function inspect() {
   };
 }
 
+// --- CSS (chat width) ---
+function applyCssFile() {
+  if (!cfg().fillChatWidth) return;
+  const css = findWebviewCss();
+  if (!css) return;
+  const src = fs.readFileSync(css, "utf8");
+  if (core.cssIsPatched(src)) return;
+  const bak = css + ".qolpatch.bak";
+  if (!fs.existsSync(bak)) fs.writeFileSync(bak, src, "utf8");
+  fs.writeFileSync(css, core.applyCss(src), "utf8");
+}
+function removeCssFile() {
+  const css = findWebviewCss();
+  if (!css) return;
+  const bak = css + ".qolpatch.bak";
+  if (fs.existsSync(bak)) {
+    fs.copyFileSync(bak, css);
+    try {
+      fs.unlinkSync(bak);
+    } catch (_) {}
+    return;
+  }
+  const src = fs.readFileSync(css, "utf8");
+  if (core.cssIsPatched(src))
+    fs.writeFileSync(css, core.removeCss(src), "utf8");
+}
+
 function doApply() {
   const wv = findWebview();
   if (!wv) return { state: "notfound" };
   let src = fs.readFileSync(wv, "utf8");
-  if (core.isCurrent(src)) return { state: "already", path: wv };
+  if (core.isCurrent(src)) {
+    applyCssFile(); // keep CSS in sync even if JS already patched
+    return { state: "already", path: wv };
+  }
   const bak = wv + ".qolpatch.bak";
   if (core.isPatched(src) && fs.existsSync(bak))
     src = fs.readFileSync(bak, "utf8");
@@ -68,12 +110,14 @@ function doApply() {
   if (!res.ok) return { state: "noanchors", path: wv, c1: res.c1, c2: res.c2 };
   if (!fs.existsSync(bak)) fs.writeFileSync(bak, src, "utf8");
   fs.writeFileSync(wv, res.out, "utf8");
+  applyCssFile();
   return { state: "patched", path: wv };
 }
 
 function doRemove() {
   const wv = findWebview();
   if (!wv) return { state: "notfound" };
+  removeCssFile();
   const bak = wv + ".qolpatch.bak";
   if (fs.existsSync(bak)) {
     fs.copyFileSync(bak, wv);
@@ -91,7 +135,6 @@ function doRemove() {
 function reloadWindow() {
   return vscode.commands.executeCommand("workbench.action.reloadWindow");
 }
-
 function offerReload(message) {
   vscode.window
     .showInformationMessage(message, "Reload Window")
@@ -151,7 +194,7 @@ function applyInteractive() {
   if (r.state === "patched") {
     justApplied = true;
     refreshStatusBar();
-    offerReload("Kilo QoL Patch applied. Reload to see MCP images inline.");
+    offerReload("Kilo QoL Patch applied. Reload to apply changes.");
   } else if (r.state === "already") {
     vscode.window.showInformationMessage("Kilo QoL Patch is already applied.");
     refreshStatusBar();
@@ -223,6 +266,8 @@ function showStatus() {
   const st = inspect();
   if (!st.found)
     return vscode.window.showErrorMessage("Kilo Code webview.js not found.");
+  const css = findWebviewCss();
+  const cssOn = css ? core.cssIsPatched(fs.readFileSync(css, "utf8")) : false;
   const state = st.applied
     ? justApplied
       ? "APPLIED (reload needed)"
@@ -232,7 +277,9 @@ function showStatus() {
       : st.old
         ? "older version applied"
         : "not applied";
-  vscode.window.showInformationMessage(`Kilo QoL Patch: ${state}\n${st.path}`);
+  vscode.window.showInformationMessage(
+    `Kilo QoL Patch: images=${state}; chat-width=${cssOn ? "on" : "off"}\n${st.path}`,
+  );
 }
 
 async function onStartup(context) {
@@ -243,6 +290,7 @@ async function onStartup(context) {
     return;
   }
   if (st.applied) {
+    applyCssFile();
     refreshStatusBar();
     return;
   }
@@ -252,7 +300,7 @@ async function onStartup(context) {
     if (!context.globalState.get(key)) {
       context.globalState.update(key, true);
       vscode.window.showWarningMessage(
-        "Kilo QoL Patch: this Kilo Code version isn't recognized, so MCP images won't render inline. A patch update is needed.",
+        "Kilo QoL Patch: this Kilo Code version isn't recognized, so the patch was skipped. An update is needed.",
       );
     }
     return;
@@ -262,7 +310,7 @@ async function onStartup(context) {
     if (r.state === "patched") {
       justApplied = true;
       refreshStatusBar();
-      offerReload("Kilo QoL Patch applied. Reload to see MCP images inline.");
+      offerReload("Kilo QoL Patch applied. Reload to apply changes.");
     } else refreshStatusBar();
   } else {
     refreshStatusBar();
