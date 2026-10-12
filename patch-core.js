@@ -1,6 +1,11 @@
-// Pure patch definition + string transforms. No vscode dependency, so this can
+// Pure patch definitions + string transforms. No vscode dependency, so this can
 // be unit-run with plain node. extension.js wraps this with VS Code UI.
+//
+// Two patches:
+//   1. webview.js  -> render MCP tool-result images inline (one per row + path).
+//   2. webview.css -> let chat content fill the panel width (remove the 98ch cap).
 
+// ---- webview.js image patch ----
 const MARKER = "\n//__MCPIMG_PATCH_v2__\n";
 const OLD_MARKERS = ["//__MCPIMG_PATCH_v1__", "//__MCPIMG_PATCH_v2__"];
 
@@ -15,6 +20,13 @@ const IMG = `C(le,{get when(){return __mcpImgs().length>0},get children(){var G=
 const R2_FIND = `,C(le,{get when(){return o()},children:y=>(()=>{var v=Oka();`;
 const R2_REPL =
   `,` + IMG + `,C(le,{get when(){return o()},children:y=>(()=>{var v=Oka();`;
+
+// ---- webview.css chat-width patch ----
+const CSS_MARKER = "/*__KQP_CSS_v1__*/";
+const CSS_BLOCK =
+  "\n" +
+  CSS_MARKER +
+  "\n.chat-view{--chat-readable-width:100% !important;--chat-gutter:16px !important;}\n";
 
 function countOf(hay, needle) {
   let n = 0,
@@ -31,7 +43,6 @@ function countOf(hay, needle) {
 function isPatched(src) {
   return OLD_MARKERS.some((m) => src.includes(m));
 }
-
 function isCurrent(src) {
   return src.includes(MARKER.trim());
 }
@@ -50,6 +61,18 @@ function removeFromString(src) {
   return out;
 }
 
+// CSS helpers
+function cssIsPatched(src) {
+  return src.includes(CSS_MARKER);
+}
+function applyCss(src) {
+  if (src.includes(CSS_MARKER)) return src;
+  return src + CSS_BLOCK;
+}
+function removeCss(src) {
+  return src.split(CSS_BLOCK).join("");
+}
+
 module.exports = {
   MARKER,
   OLD_MARKERS,
@@ -57,9 +80,14 @@ module.exports = {
   R1_REPL,
   R2_FIND,
   R2_REPL,
+  CSS_MARKER,
+  CSS_BLOCK,
   countOf,
   isPatched,
   isCurrent,
   applyToString,
   removeFromString,
+  cssIsPatched,
+  applyCss,
+  removeCss,
 };
