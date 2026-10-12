@@ -36,7 +36,6 @@ function isCurrent(src) {
   return src.includes(MARKER.trim());
 }
 
-// Transform pristine source -> patched source. Returns { ok, out, c1, c2 }.
 function applyToString(src) {
   const c1 = countOf(src, R1_FIND);
   const c2 = countOf(src, R2_FIND);
@@ -45,7 +44,6 @@ function applyToString(src) {
   return { ok: true, out, c1, c2 };
 }
 
-// Reverse the string edits (used only when no backup is available).
 function removeFromString(src) {
   let out = src.split(R1_REPL).join(R1_FIND).split(R2_REPL).join(R2_FIND);
   for (const m of OLD_MARKERS) out = out.split("\n" + m + "\n").join("");
