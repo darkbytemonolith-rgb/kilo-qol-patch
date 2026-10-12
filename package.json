@@ -1,0 +1,52 @@
+{
+  "name": "kilo-mcp-image-patch",
+  "displayName": "Kilo MCP Image Patch",
+  "description": "Patches the Kilo Code chat webview so MCP tool results (read_image, browser screenshots) render image attachments inline, one per row with its path.",
+  "version": "0.0.3",
+  "publisher": "local",
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "kiloMcpImagePatch.apply",
+        "title": "Kilo MCP Image Patch: Apply / Re-apply"
+      },
+      {
+        "command": "kiloMcpImagePatch.remove",
+        "title": "Kilo MCP Image Patch: Remove (restore original)"
+      },
+      {
+        "command": "kiloMcpImagePatch.status",
+        "title": "Kilo MCP Image Patch: Status"
+      },
+      {
+        "command": "kiloMcpImagePatch.menu",
+        "title": "Kilo MCP Image Patch: Open Menu"
+      }
+    ],
+    "configuration": {
+      "title": "Kilo MCP Image Patch",
+      "properties": {
+        "kiloMcpImagePatch.autoApply": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically apply the patch on startup and after a Kilo Code update replaces the webview. When off, you will be asked before applying."
+        },
+        "kiloMcpImagePatch.showStatusBar": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show a status bar indicator for the patch state."
+        }
+      }
+    }
+  }
+}
