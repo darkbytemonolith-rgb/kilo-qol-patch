@@ -1,10 +1,11 @@
 {
   "name": "kilo-qol-patch",
   "displayName": "Kilo QoL Patch",
-  "description": "Quality-of-life patcher for the Kilo Code chat webview: renders MCP tool-result images (read_image, browser screenshots) inline with their paths, and lets chat content fill the panel width. Includes a status-bar indicator and auto-apply.",
-  "version": "0.2.0",
-  "publisher": "darkbyte",
+  "description": "QoL patch for Kilo Code: drag & drop @file/@folder mentions, full keyboard controls, KaTeX math, raw markdown toggle, custom typography, inline MCP images, cross-workspace chat history.",
+  "version": "0.8.2",
+  "publisher": "dark-byte",
   "license": "MIT",
+  "icon": "icon.png",
   "repository": {
     "type": "git",
     "url": "https://github.com/darkbytemonolith-rgb/kilo-qol-patch.git"
@@ -13,25 +14,38 @@
     "url": "https://github.com/darkbytemonolith-rgb/kilo-qol-patch/issues"
   },
   "engines": {
-    "vscode": "^1.80.0"
+    "vscode": "^1.85.0"
   },
   "categories": [
+    "AI",
     "Other"
   ],
   "keywords": [
     "kilo",
     "kilo code",
+    "kilocode",
+    "keyboard",
+    "enter",
     "mcp",
     "patch",
     "images",
+    "math",
+    "katex",
     "qol"
   ],
   "activationEvents": [
-    "onStartupFinished"
+    "*"
   ],
   "main": "./extension.js",
+  "scripts": {
+    "vscode:uninstall": "node ./scripts/uninstall.js"
+  },
   "contributes": {
     "commands": [
+      {
+        "command": "kiloQolPatch.reload",
+        "title": "Kilo QoL Patch: Reload Window"
+      },
       {
         "command": "kiloQolPatch.apply",
         "title": "Kilo QoL Patch: Apply / Re-apply"
@@ -47,8 +61,30 @@
       {
         "command": "kiloQolPatch.menu",
         "title": "Kilo QoL Patch: Open Menu"
+      },
+      {
+        "command": "kiloQolPatch.toggleShowAllChats",
+        "title": "Kilo QoL Patch: Toggle Show All Chats"
+      },
+      {
+        "command": "kiloQolPatch.mentionInChat",
+        "title": "Mention in Kilo Chat"
       }
     ],
+    "menus": {
+      "commandPalette": [
+        {
+          "command": "kiloQolPatch.toggleShowAllChats",
+          "group": "0@1"
+        }
+      ],
+      "explorer/context": [
+        {
+          "command": "kiloQolPatch.mentionInChat",
+          "group": "7_modification"
+        }
+      ]
+    },
     "configuration": {
       "title": "Kilo QoL Patch",
       "properties": {
@@ -62,10 +98,59 @@
           "default": true,
           "description": "Show a status bar indicator for the patch state."
         },
+        "kiloQolPatch.keyboardShortcuts": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable full keyboard enhancements: Enter inserts newline, Cmd/Ctrl+Enter sends message, smart Escape routes safely, Cmd/Ctrl+Up/Down navigates message history, and typing in textarea cannot trigger permission dialogs."
+        },
+        "kiloQolPatch.addAttachFileButton": {
+          "type": "boolean",
+          "default": false,
+          "description": "Add a `+` button to the Kilo Code prompt toolbar that opens the file picker directly."
+        },
+        "kiloQolPatch.chatMathRendering": {
+          "type": "boolean",
+          "default": true,
+          "description": "Render `$...$` inline math and `\\[...\\]` display math in chat via KaTeX."
+        },
+        "kiloQolPatch.chatMathFontSizeEm": {
+          "type": "number",
+          "default": 1.21,
+          "minimum": 0.5,
+          "maximum": 2,
+          "description": "Font size of rendered math in chat, in `em` relative to surrounding text."
+        },
+        "kiloQolPatch.chatRawMarkdownButton": {
+          "type": "boolean",
+          "default": true,
+          "description": "Add a button beside Copy under assistant replies to toggle between rendered markdown and raw markdown source."
+        },
+        "kiloQolPatch.chatHistoryFontSizeEm": {
+          "type": "number",
+          "default": 1,
+          "minimum": 0.5,
+          "maximum": 3,
+          "description": "Multiply font size of agent rendered responses in chat history relative to Kilo Code Display font size (1 is unchanged)."
+        },
+        "kiloQolPatch.chatHistoryFontFamily": {
+          "type": "string",
+          "default": "",
+          "description": "CSS font-family for agent rendered responses in chat history (e.g. 'Charter, Georgia, serif'). Empty keeps default."
+        },
         "kiloQolPatch.fillChatWidth": {
           "type": "boolean",
           "default": true,
-          "description": "Let chat messages fill the full panel width instead of the default ~98ch readable column (removes the left/right gaps)."
+          "description": "Apply style enhancements (full-width chat, bordered tool cards, readable dark code blocks). When off, original styling is restored."
+        },
+        "kiloQolPatch.showAllChats": {
+          "type": "boolean",
+          "default": false,
+          "description": "Show all chats in the Kilo Code history sidebar, including sessions from other workspace folders. The patch keeps cross-workspace/cloud sessions visible instead of pruning them to the current folder. Requires a Reload Window after toggling."
+        },
+        "kiloQolPatch.renameOpenInTab": {
+          "type": "boolean",
+          "default": false,
+          "description": "Retitle Kilo Code's editor-title 'Open in Tab' action to 'Kilo Code: Open' so its icon groups next to other AI Open icons."
         }
       }
     }

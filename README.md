@@ -1,46 +1,75 @@
-# Kilo QoL Patch
+# Kilo QoL + KB Patch
 
-A quality-of-life patch for the **Kilo Code** VS Code chat webview.
+The all-in-one quality-of-life and keyboard patch for the **Kilo Code** VS Code AI chat webview.
 
-Kilo already turns MCP tool-result images (e.g. `read_image`, browser screenshots)
-into attachments the model receives, but the generic MCP tool card never renders
-them for you. This extension patches the chat webview so those images show
-**inline, one per row, with the image path above each picture**, and clicking an
-image opens the full-size preview.
+Integrates the full functionality of **Kilo Code KB Patch** and **Kilo QoL Patch** into a single, unified extension.
+
+---
 
 ## Features
-- Inline rendering of MCP tool-result images (supports multiple images per result).
-- Each image is labelled with its file path / filename.
-- Click to open the built-in zoomable image preview.
-- Status-bar indicator showing patch state (applied / reload-needed / off / build mismatch).
-- Auto-apply on startup and after a Kilo Code update replaces the webview.
-- One-click apply / remove / reload from the status-bar menu.
 
-## Install
-1. Download the `.vsix` from the [latest release](https://github.com/darkbytemonolith-rgb/kilo-qol-patch/releases).
-2. VS Code → Extensions → `...` menu → **Install from VSIX...** → pick the file.
-3. Run **Developer: Reload Window**.
+### ⌨️ Full Keyboard & Chat Controls (KB Patch)
+- **Enter for newline, Cmd/Ctrl+Enter to send**: Multiline prompt typing feels natural without premature accidental message submits.
+- **Smart Escape**: Bare `Escape` aborts/cancels only when the chat input is empty or whitespace-only, preventing accidental cancellation of streaming tasks. `Shift+Escape` always aborts.
+- **Mention Escape**: Pressing `Escape` cleanly dismisses the `@` mention menu and keeps it closed until explicitly reopened.
+- **Message History Recall**: `Cmd/Ctrl+Up` and `Cmd/Ctrl+Down` cycle through previous prompt history, leaving plain `Up` and `Down` arrow keys for caret navigation inside multiline inputs.
+- **Permission Safety Keys**: Prevents typing inside the chat textarea from accidentally triggering global permission dialog shortcuts. `Cmd/Ctrl+Enter` explicitly approves permission prompts.
+- **Chat Scroll Pinned**: Automatically keeps message history pinned to the bottom during live response generation without jarring scroll jumps.
+- **Hover Guard**: Suppresses synthetic hover and tooltip events while the mouse cursor is hidden during fast typing.
 
-## How it works
-On activation it locates the installed Kilo Code extension's `dist/webview.js`,
-verifies two anchor strings exist exactly once (so an unrecognized build is skipped,
-not corrupted), backs the file up to `webview.js.qolpatch.bak`, and injects a small
-image-rendering block into the MCP tool renderer. **Remove** restores the backup.
+### 📎 Drag & Drop Mentions & Attachments
+- **Clean file and folder drag & drop mentions**: Drag and drop any file or folder from the VS Code Explorer straight into the chat input. Only the clean `@filename` or `@folder_name` is displayed in chat text (no ugly long paths), while the full absolute disk path is mapped under the hood in `window.__kqpDroppedPaths` and attached with `file://` URLs for backend tools and AI.
+- **Attach file button (`+`)**: Optional direct file picker button added to the prompt toolbar.
+
+### 📐 Math Rendering & Raw Markdown Source
+- **KaTeX Math Rendering**: Supports standard single-dollar `$...$` inline math and `\[...\]` display math in chat (in addition to `$$...$$` and `\(...\)`). Font size is configurable.
+- **Raw Markdown Toggle**: Adds a button beside **Copy** under assistant responses to toggle between rendered view and raw markdown source.
+- **Custom Response Typography**: Configurable font size scaling multiplier (`kiloQolPatch.chatHistoryFontSizeEm`) and custom font family (`kiloQolPatch.chatHistoryFontFamily`) with proportional heading ladder.
+
+### 🖼️ MCP Inline Images & Expanded Cards (QoL)
+- **Inline rendering of MCP tool-result images**: Images from tools (e.g. `read_image`, browser screenshots, data URLs) render directly inline in chat cards with labels and click-to-zoom.
+- **Auto-expanded tool & reasoning cards**: Tool execution cards and thinking blocks start expanded by default.
+- **Show all chats (cross-workspace history)**: Shows chat sessions from all workspace folders in the history sidebar on demand.
+
+### 🎨 Visual & Layout Styling
+- **Full-width chat panel**: Messages fill the full panel width (`--chat-readable-width: 100%`).
+- **Clean tool cards**: Trae-style border and trigger padding.
+- **Syntax-highlighted code blocks**: Dark `#0d1117` background with readable `#e6edf3` contrast.
+- **Field-sizing auto-expanding input**: Textarea expands naturally with content.
+
+---
 
 ## Settings
-- `kiloQolPatch.autoApply` (default `true`) — apply automatically; when off you're asked.
-- `kiloQolPatch.showStatusBar` (default `true`) — show the status-bar indicator.
+
+| Setting | Default | Description |
+|---|---|---|
+| `kiloQolPatch.autoApply` | `true` | Automatically apply patch on startup or after Kilo Code updates. |
+| `kiloQolPatch.showStatusBar` | `true` | Show status bar item with quick menu. |
+| `kiloQolPatch.keyboardShortcuts` | `true` | Enter for newline, Cmd/Ctrl+Enter to send, smart Escape, history recall. |
+| `kiloQolPatch.addAttachFileButton` | `true` | Add `+` button to prompt toolbar for direct file picking. |
+| `kiloQolPatch.chatMathRendering` | `true` | Render `$...$` inline and `\[...\]` display math via KaTeX. |
+| `kiloQolPatch.chatMathFontSizeEm` | `1.21` | Font size multiplier for rendered math in chat. |
+| `kiloQolPatch.chatRawMarkdownButton` | `true` | Add button to toggle raw markdown source under assistant replies. |
+| `kiloQolPatch.chatHistoryFontSizeEm` | `1` | Font size multiplier for agent responses in chat history. |
+| `kiloQolPatch.chatHistoryFontFamily` | `""` | CSS font family for agent responses (e.g. `Charter, Georgia, serif`). |
+| `kiloQolPatch.fillChatWidth` | `true` | Apply Trae cards, readable code blocks, and full panel width. |
+| `kiloQolPatch.showAllChats` | `false` | Surface chats across all workspace folders. |
+| `kiloQolPatch.renameOpenInTab` | `false` | Rename editor title action to "Kilo Code: Open". |
+
+---
 
 ## Commands
-- Kilo QoL Patch: Apply / Re-apply
-- Kilo QoL Patch: Remove (restore original)
-- Kilo QoL Patch: Status
-- Kilo QoL Patch: Open Menu
 
-## Caveats
-Unofficial. It edits a minified bundle, so it is tied to a specific Kilo Code build
-(developed against 7.8.8). If the bundle changes, the patch safely declines to apply
-and the status bar shows "build mismatch" until the anchors are refreshed.
+- **Kilo QoL Patch: Apply / Re-apply**
+- **Kilo QoL Patch: Remove (restore original)**
+- **Kilo QoL Patch: Status**
+- **Kilo QoL Patch: Open Menu**
+- **Kilo QoL Patch: Toggle Show All Chats**
+
+---
+
+## Safety & Restoration
+Original files are automatically backed up to `*.qolpatch.bak` before any modification. Removing the patch or uninstalling the extension restores the original files byte-for-byte.
 
 ## License
 MIT
