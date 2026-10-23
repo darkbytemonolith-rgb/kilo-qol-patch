@@ -2,7 +2,7 @@
   "name": "kilo-qol-patch",
   "displayName": "Kilo QoL Patch",
   "description": "Kilo Code chat QoL: background subagents, middle-mouse scrolling, compact layout, code wrapping, keyboard controls, file mentions, math, and inline images.",
-  "version": "1.3.6",
+  "version": "1.3.7",
   "publisher": "dark-byte",
   "license": "MIT",
   "icon": "icon.png",
