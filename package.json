@@ -1,8 +1,8 @@
 {
   "name": "kilo-qol-patch",
   "displayName": "Kilo QoL Patch",
-  "description": "QoL patch for Kilo Code: drag & drop @file/@folder mentions, full keyboard controls, KaTeX math, raw markdown toggle, custom typography, inline MCP images, cross-workspace chat history.",
-  "version": "0.8.2",
+  "description": "Kilo Code chat QoL: background subagents, middle-mouse scrolling, compact layout, code wrapping, keyboard controls, file mentions, math, and inline images.",
+  "version": "1.3.6",
   "publisher": "dark-byte",
   "license": "MIT",
   "icon": "icon.png",
@@ -136,6 +136,21 @@
           "type": "string",
           "default": "",
           "description": "CSS font-family for agent rendered responses in chat history (e.g. 'Charter, Georgia, serif'). Empty keeps default."
+        },
+        "kiloQolPatch.compactChatLayout": {
+          "type": "boolean",
+          "default": false,
+          "description": "Reduce vertical spacing in assistant markdown and tool cards to fit more conversation on screen."
+        },
+        "kiloQolPatch.chatCodeWrap": {
+          "type": "boolean",
+          "default": false,
+          "description": "Wrap long lines in chat code blocks instead of requiring horizontal scrolling."
+        },
+        "kiloQolPatch.backgroundSubagents": {
+          "type": "boolean",
+          "default": true,
+          "description": "Add a Kilo global instruction that requires all subagents to start in background mode. Disabling removes only the instruction managed by this extension."
         },
         "kiloQolPatch.fillChatWidth": {
           "type": "boolean",

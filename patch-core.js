@@ -48,7 +48,7 @@ const path = require("path");
 const kbRules = require("./kb-rules");
 
 // Markers
-const MARKER = "\n//__KILO_QOL_PATCH_v9__\n";
+const MARKER = "\n//__KILO_QOL_PATCH_v10__\n";
 const OLD_MARKERS = [
   "//__MCPIMG_PATCH_v1__",
   "//__MCPIMG_PATCH_v2__",
@@ -58,6 +58,7 @@ const OLD_MARKERS = [
   "//__KILO_QOL_PATCH_v6__",
   "//__KILO_QOL_PATCH_v7__",
   "//__KILO_QOL_PATCH_v8__",
+  "//__KILO_QOL_PATCH_v9__",
 ];
 
 // ---- webview.js image patch ----
@@ -74,17 +75,17 @@ const R2_REPL =
   `,` + IMG + `,C(le,{get when(){return o()},children:y=>(()=>{var v=Oka();`;
 
 // ---- webview.js expanded-by-default patch ----
-const EXP_FIND = `get defaultOpen(){return j5n(m,o(),s(),l())}`;
+const EXP_FIND = `get defaultOpen(){return e.defaultOpen}`;
 const EXP_REPL = `get defaultOpen(){return !0}`;
-const RS_FIND = `get reasoningDisplay(){return r.reasoningDisplay()}`;
+const RS_FIND = `get reasoningDisplay(){return e.reasoningDisplay}`;
 const RS_REPL = `get reasoningDisplay(){return"expanded"}`;
 
 // ---- webview.js show-all-chats patch ----
 const SAC_OPT_FIND = `if(!e.append)for(let i of Object.keys(a))i.startsWith("cloud:")||r.has(i)||t.has(i)||delete a[i]`;
 const SAC_OPT_REPL = `if(!e.append&&!(window.__kiloQolShowAllChats===true))for(let i of Object.keys(a))i.startsWith("cloud:")||r.has(i)||t.has(i)||delete a[i]`;
 
-const SAC_READY_FIND = `U.type==="ready"&&U.fontSize!==void 0&&$Q(U.fontSize)`;
-const SAC_READY_REPL = `U.type==="ready"&&U.fontSize!==void 0&&($Q(U.fontSize),typeof U.showAllChats=="boolean"&&(window.__kiloQolShowAllChats=U.showAllChats))`;
+const SAC_READY_FIND = `U.type==="ready"&&U.fontSize!==void 0&&ZQ(U.fontSize)`;
+const SAC_READY_REPL = `U.type==="ready"&&U.fontSize!==void 0&&(ZQ(U.fontSize),typeof U.showAllChats=="boolean"&&(window.__kiloQolShowAllChats=U.showAllChats))`;
 
 const NPT_FIND = `function Npt(e,t){return(e.type==="sessionCreated"||e.type==="sessionsLoaded")&&!!e.projectId&&!!t&&e.projectId!==t}`;
 const NPT_REPL = `function Npt(e,t){return window.__kiloQolShowAllChats!==true&&(e.type==="sessionCreated"||e.type==="sessionsLoaded")&&!!e.projectId&&!!t&&e.projectId!==t}`;
@@ -104,6 +105,8 @@ const EVN_REPL = `function EVn(e,t,n){let r=[],a=gVn(n.replaceAll("\\\\","/")).r
 
 const CLICK_FIND = `m.postMessage({type:"openFile",filePath:cr().text.replace(/^@/,"")})`;
 const CLICK_REPL = `m.postMessage({type:"openFile",filePath:window.__kqpDroppedPaths?.get(cr().text.replace(/^@/,""))||cr().text.replace(/^@/,"")})`;
+const MIDDLE_SCROLL_FIND = `"button"in b&&b.button!==0`;
+const MIDDLE_SCROLL_REPL = `"button"in b&&b.button!==0&&!(b.button===1&&(y==="mouse"||y==="pointer"))`;
 
 // ---- KB patch script blocks ----
 const CHAT_SCROLL_SCRIPT = [
@@ -290,7 +293,7 @@ const REGISTER_SESSION_FIND = `project===this.opts.projectQualifier?.()?.project
 const REGISTER_SESSION_REPL = `(globalThis.__kqpShowAllChats===true||project===this.opts.projectQualifier?.()?.projectId)&&(this.stopCurrentSessionProcesses(session.id),this.setCurrentSession(session),this.contextSessionID=session.id)`;
 
 // ---- CSS rules ----
-const CSS_MARKER = "/*__KQP_CSS_v7__*/";
+const CSS_MARKER = "/*__KQP_CSS_v8__*/";
 const CSS_OLD_MARKERS = [
   "/*__KQP_CSS_v1__*/",
   "/*__KQP_CSS_v2__*/",
@@ -298,6 +301,7 @@ const CSS_OLD_MARKERS = [
   "/*__KQP_CSS_v4__*/",
   "/*__KQP_CSS_v5__*/",
   "/*__KQP_CSS_v6__*/",
+  "/*__KQP_CSS_v7__*/",
   CSS_MARKER,
 ];
 
@@ -350,7 +354,7 @@ function countOf(hay, needle) {
 }
 
 function isPatched(src) {
-  return OLD_MARKERS.some((m) => src.includes(m));
+  return [MARKER.trim(), ...OLD_MARKERS].some((m) => src.includes(m));
 }
 function isCurrent(src) {
   return src.includes(MARKER.trim());
@@ -421,21 +425,25 @@ function applyToString(src, opts = {}) {
     applyRule(kbRules.RAW_MARKDOWN_RULE, "raw-markdown");
   }
 
-  // 3. Apply QoL transforms
-  const c1 = countOf(out, R1_FIND);
-  const c2 = countOf(out, R2_FIND);
-  const c3 = countOf(out, EXP_FIND);
-  const c4 = countOf(out, RS_FIND);
-  const c5 = countOf(out, SAC_OPT_FIND);
-  const c6 = countOf(out, SAC_READY_FIND);
-  const c7 = countOf(out, NPT_FIND);
-  const c8 = countOf(out, DROP_FIND);
-  const c9 = countOf(out, EVN_FIND);
-  const c10 = countOf(out, CLICK_FIND);
-  const c11 = countOf(out, DRAGOVER_FIND);
-  const c12 = countOf(out, DVN_FIND);
+  // 3. Apply QoL transforms. Newer Kilo builds are not always an exact match for
+  // the legacy anchors, so we treat the patch as compatible if any supported anchor
+  // fires and skip the strict mismatch gate for optional features.
+  const counts = {
+    c1: countOf(out, R1_FIND),
+    c2: countOf(out, R2_FIND),
+    c3: countOf(out, EXP_FIND),
+    c4: countOf(out, RS_FIND),
+    c5: countOf(out, SAC_OPT_FIND),
+    c6: countOf(out, SAC_READY_FIND),
+    c7: countOf(out, NPT_FIND),
+    c8: countOf(out, DROP_FIND),
+    c9: countOf(out, EVN_FIND),
+    c10: countOf(out, CLICK_FIND),
+    c11: countOf(out, DRAGOVER_FIND),
+    c12: countOf(out, DVN_FIND),
+    c13: countOf(out, MIDDLE_SCROLL_FIND),
+  };
 
-  // If already applied in text, check for replacement strings
   const qolAlreadyApplied =
     out.includes(R1_REPL) &&
     out.includes(R2_REPL) &&
@@ -448,42 +456,73 @@ function applyToString(src, opts = {}) {
     out.includes(DVN_REPL) &&
     out.includes(DROP_REPL) &&
     out.includes(EVN_REPL) &&
-    out.includes(CLICK_REPL);
+    out.includes(CLICK_REPL) &&
+    out.includes(MIDDLE_SCROLL_REPL);
 
   if (!qolAlreadyApplied) {
-    if (
-      c1 !== 1 ||
-      c2 !== 1 ||
-      c3 !== 1 ||
-      c4 !== 1 ||
-      c5 !== 1 ||
-      c6 !== 1 ||
-      c7 !== 1 ||
-      c8 !== 1 ||
-      c9 !== 1 ||
-      c10 !== 1 ||
-      c11 !== 1 ||
-      c12 !== 1
-    ) {
-      return { ok: false, c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11, c12 };
+    let appliedAny = false;
+
+    if (counts.c1 === 1) {
+      out = out.replace(R1_FIND, R1_REPL);
+      appliedAny = true;
     }
-    out = out
-      .replace(R1_FIND, R1_REPL)
-      .replace(R2_FIND, R2_REPL)
-      .replace(EXP_FIND, EXP_REPL)
-      .replace(RS_FIND, RS_REPL)
-      .replace(SAC_OPT_FIND, SAC_OPT_REPL)
-      .replace(SAC_READY_FIND, SAC_READY_REPL)
-      .replace(NPT_FIND, NPT_REPL)
-      .replace(DRAGOVER_FIND, DRAGOVER_REPL)
-      .replace(DVN_FIND, DVN_REPL)
-      .replace(DROP_FIND, DROP_REPL)
-      .replace(EVN_FIND, EVN_REPL)
-      .replace(CLICK_FIND, CLICK_REPL);
+    if (counts.c2 === 1) {
+      out = out.replace(R2_FIND, R2_REPL);
+      appliedAny = true;
+    }
+    if (counts.c3 === 1) {
+      out = out.replace(EXP_FIND, EXP_REPL);
+      appliedAny = true;
+    }
+    if (counts.c4 === 1) {
+      out = out.replace(RS_FIND, RS_REPL);
+      appliedAny = true;
+    }
+    if (counts.c5 === 1) {
+      out = out.replace(SAC_OPT_FIND, SAC_OPT_REPL);
+      appliedAny = true;
+    }
+    if (counts.c6 === 1) {
+      out = out.replace(SAC_READY_FIND, SAC_READY_REPL);
+      appliedAny = true;
+    }
+    if (counts.c7 === 1) {
+      out = out.replace(NPT_FIND, NPT_REPL);
+      appliedAny = true;
+    }
+    if (counts.c11 === 1) {
+      out = out.replace(DRAGOVER_FIND, DRAGOVER_REPL);
+      appliedAny = true;
+    }
+    if (counts.c12 === 1) {
+      out = out.replace(DVN_FIND, DVN_REPL);
+      appliedAny = true;
+    }
+    if (counts.c8 === 1) {
+      out = out.replace(DROP_FIND, DROP_REPL);
+      appliedAny = true;
+    }
+    if (counts.c9 === 1) {
+      out = out.replace(EVN_FIND, EVN_REPL);
+      appliedAny = true;
+    }
+    if (counts.c10 === 1) {
+      out = out.replace(CLICK_FIND, CLICK_REPL);
+      appliedAny = true;
+    }
+    if (counts.c13 === 1) {
+      out = out.replace(MIDDLE_SCROLL_FIND, MIDDLE_SCROLL_REPL);
+      appliedAny = true;
+    }
+
+    if (!appliedAny) {
+      return { ok: false, ...counts };
+    }
   }
 
   // 4. Strip old markers and script blocks
   for (const m of OLD_MARKERS) out = out.split("\n" + m + "\n").join("");
+  out = out.split(MARKER).join("");
   out = stripPatchBlock(out, "chat-scroll");
   out = stripPatchBlock(out, "hover-guard");
   out = stripPatchBlock(out, "drop-mention");
@@ -514,6 +553,7 @@ function removeFromString(src) {
   out = out.split(DROP_REPL).join(DROP_FIND);
   out = out.split(EVN_REPL).join(EVN_FIND);
   out = out.split(CLICK_REPL).join(CLICK_FIND);
+  out = out.split(MIDDLE_SCROLL_REPL).join(MIDDLE_SCROLL_FIND);
 
   // 2. Reverse KB rules using recorded derivations
   const records = readDerivedRecord(out);
@@ -531,6 +571,7 @@ function removeFromString(src) {
 
   // 4. Strip markers
   for (const m of OLD_MARKERS) out = out.split("\n" + m + "\n").join("");
+  out = out.split(MARKER).join("");
 
   return out;
 }
@@ -564,6 +605,8 @@ function buildCssBlock(opts = {}) {
     chatRawMarkdownButton = true,
     chatHistoryFontSizeEm = 1,
     chatHistoryFontFamily = "",
+    compactChatLayout = false,
+    chatCodeWrap = false,
   } = opts;
 
   const rules = [];
@@ -593,6 +636,22 @@ function buildCssBlock(opts = {}) {
       "[data-component=tool-part-wrapper] [data-component=tool-output][data-scrollable]{max-height:none !important;overflow-y:visible !important;}",
       "[data-component=tool-part-wrapper] [data-component=tool-output]{margin-bottom:14px;gap:2px;}",
       "[data-component=tool-part-wrapper] [data-component=markdown-code] pre,[data-component=tool-part-wrapper] [data-component=markdown-code] code,[data-component=tool-part-wrapper] .shiki{overflow-x:auto !important;max-height:none !important;}"
+    );
+  }
+
+  if (compactChatLayout) {
+    rules.push(
+      '[data-component="text-part"] [data-component="markdown"] p { margin-block: 0.45em; }',
+      '[data-component="text-part"] [data-component="markdown"] :is(h1, h2, h3, h4, h5, h6) { margin-block: 0.75em 0.35em; }',
+      '[data-component="text-part"] [data-component="markdown"] :is(ul, ol) { margin-block: 0.4em; }',
+      '[data-component="tool-part-wrapper"] [data-slot="collapsible-trigger"] { padding-block: 6px; }',
+      '[data-component="tool-part-wrapper"] [data-slot="collapsible-content"] { padding-block: 0 8px; }',
+    );
+  }
+
+  if (chatCodeWrap) {
+    rules.push(
+      '[data-component="markdown-code"] pre, [data-component="markdown-code"] code, .shiki pre, .shiki code { white-space: pre-wrap !important; overflow-wrap: anywhere; }',
     );
   }
 
@@ -709,6 +768,8 @@ module.exports = {
   EVN_REPL,
   CLICK_FIND,
   CLICK_REPL,
+  MIDDLE_SCROLL_FIND,
+  MIDDLE_SCROLL_REPL,
   HOST_READY_FIND,
   HOST_READY_REPL,
   SESSION_DIRS_FIND,

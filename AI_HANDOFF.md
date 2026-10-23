@@ -1,7 +1,11 @@
 # Comprehensive AI Handoff & Implementation Blueprint
 **Project**: `kilo-qol-patch` (Kilo Code Drag & Drop & QoL Patches)  
-**Date**: October 13, 2026  
-**Status**: Root cause verified; complete copy-paste code and architecture ready for instant execution. No further research needed.
+**Date**: October 24, 2026  
+**Status**: Historical implementation notes. The workbench patch module and extension integration described below have since been added; do not treat the old pending checklist or version references as current.
+
+## Current Background Subagent Setting
+
+Version 1.3.6 adds `kiloQolPatch.backgroundSubagents` (enabled by default). When enabled, the extension adds its managed rule file to Kilo's global `instructions` list in `kilo.jsonc`. The rule asks Kilo to launch all delegated agents in background mode and not to block on their launch. Disabling the setting or uninstalling removes only the instruction path and rule file owned by this extension; unrelated Kilo config and instruction files are preserved. This is a model instruction, not a backend-enforced restriction.
 
 ---
 
@@ -9,21 +13,8 @@
 
 The goal is to enable **native mouse-only drag-and-drop** of files and folders from the VS Code Explorer directly into Kilo Code's chat input area (identical to Google Antigravity IDE and Cursor), **without ever having to hold the `Shift` key**.
 
-### Current Status: WE ARE NOT FINISHED YET!
-The research and root cause analysis are complete, but the workbench unblocker code has **NOT YET BEEN APPLIED TO THE CODEBASE**. 
-
-### 📌 Pending TODO List (What Is NOT Fixed Yet):
-- [ ] **TODO 1: Create `workbench-patch.js`** in `c:\Users\Dark_Byte\Downloads\completed\kilo-qol-patch\workbench-patch.js` using the ready-to-run code in Section 5.A.
-- [ ] **TODO 2: Integrate into `extension.js`** — call `patchWorkbench()` on activation so the user gets mouse-only drops automatically, and expose command `kiloQol.patchWorkbenchDnd`.
-- [ ] **TODO 3: Integrate into `scripts/uninstall.js`** — call `unpatchWorkbench()` so uninstall restores original VS Code files and checksums.
-- [ ] **TODO 4: Bump version to `0.8.0` in `package.json`**.
-- [ ] **TODO 5: Run `node -e "const { patchWorkbench } = require('./workbench-patch'); console.log(patchWorkbench());"`** to verify patching works without errors.
-- [ ] **TODO 6: Run `.\build-vsix.ps1` and `code --install-extension kilo-qol-patch-0.8.0.vsix --force`**.
-- [ ] **TODO 7: Reload VS Code window & Live Test**:
-  - Drag a file directly from Explorer to Kilo Code chat input with **MOUSE ONLY (NO SHIFT)**.
-  - Drag a folder directly from Explorer to Kilo Code chat input with **MOUSE ONLY (NO SHIFT)**.
-  - Verify clean `@name ` mention appears and context resolves.
-  - Confirm NO "Installation appears corrupt" warning appears in VS Code.
+### Current Status
+The original workbench DnD implementation checklist below is retained as historical context only. The current extension version is recorded in `package.json`. The webview patch is designed to restore the original files byte-for-byte when removed.
 
 ---
 

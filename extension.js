@@ -3,6 +3,7 @@ const fs = require("fs");
 const path = require("path");
 const os = require("os");
 const core = require("./patch-core");
+const backgroundSubagents = require("./background-subagents");
 const crypto = require("crypto");
 
 let statusBar;
@@ -22,8 +23,32 @@ function cfg() {
     chatRawMarkdownButton: c.get("chatRawMarkdownButton", true),
     chatHistoryFontSizeEm: c.get("chatHistoryFontSizeEm", 1),
     chatHistoryFontFamily: c.get("chatHistoryFontFamily", ""),
+    compactChatLayout: c.get("compactChatLayout", false),
+    chatCodeWrap: c.get("chatCodeWrap", false),
+    backgroundSubagents: c.get("backgroundSubagents", true),
     renameOpenInTab: c.get("renameOpenInTab", false),
   };
+}
+
+function syncBackgroundSubagents() {
+  try {
+    const result = cfg().backgroundSubagents
+      ? backgroundSubagents.enable(backgroundSubagents.configDir())
+      : backgroundSubagents.disable(backgroundSubagents.configDir());
+    return result.changed;
+  } catch (err) {
+    console.error("[kilo-qol-patch] background subagent rule update failed", err);
+    vscode.window.showWarningMessage(
+      `Kilo QoL Patch could not update the background-subagent rule: ${err.message}`,
+    );
+    return false;
+  }
+}
+
+function offerBackgroundRuleReload() {
+  offerReload(
+    "Kilo's background-subagent instruction changed. Reload the window for new chats to use it.",
+  );
 }
 
 function kiloDistDir() {
@@ -425,12 +450,14 @@ async function onStartup(context) {
   if (fs.existsSync(flagFile)) {
     try { fs.unlinkSync(flagFile); } catch (_) {}
   }
+  const backgroundRuleChanged = syncBackgroundSubagents();
   const currentVersion = context.extension?.packageJSON?.version || "0.8.0";
   const lastVersion = context.globalState.get("installedVersion");
   const isNewInstallOrUpdate = lastVersion !== currentVersion;
 
   const st = inspect();
   if (!st.found) {
+    if (backgroundRuleChanged) offerBackgroundRuleReload();
     refreshStatusBar();
     return;
   }
@@ -467,6 +494,7 @@ async function onStartup(context) {
     applyOpenInTab();
     refreshStatusBar();
     startWatcher(context);
+    if (backgroundRuleChanged) offerBackgroundRuleReload();
     return;
   }
 
@@ -479,10 +507,12 @@ async function onStartup(context) {
         "Kilo QoL Patch: this Kilo Code version isn't recognized, so the patch was skipped. An update is needed.",
       );
     }
+    if (backgroundRuleChanged) offerBackgroundRuleReload();
     return;
   }
 
   startWatcher(context);
+  if (backgroundRuleChanged) offerBackgroundRuleReload();
 }
 
 async function toggleShowAllChats() {
@@ -557,6 +587,9 @@ function activate(context) {
     vscode.commands.registerCommand("kiloQolPatch.mentionInChat", mentionInChat),
     vscode.workspace.onDidChangeConfiguration((e) => {
       if (e.affectsConfiguration("kiloQolPatch")) {
+        if (e.affectsConfiguration("kiloQolPatch.backgroundSubagents")) {
+          if (syncBackgroundSubagents()) offerBackgroundRuleReload();
+        }
         if (e.affectsConfiguration("kiloQolPatch.showAllChats")) applyHostFile();
         applyCssFile();
         applyOpenInTab();

@@ -52,12 +52,14 @@ $rels = @'
 
 $files = [ordered]@{
   "extension/extension.js"         = "$src\extension.js"
+  "extension/background-subagents.js" = "$src\background-subagents.js"
   "extension/patch-core.js"        = "$src\patch-core.js"
   "extension/kb-rules.js"          = "$src\kb-rules.js"
   "extension/package.json"         = "$src\package.json"
   "extension/README.md"            = "$src\README.md"
   "extension/LICENSE"              = "$src\LICENSE"
   "extension/icon.png"             = "$src\icon.png"
+  "extension/rules/background-subagents.md" = "$src\rules\background-subagents.md"
   "extension/scripts/uninstall.js" = "$src\scripts\uninstall.js"
 }
 

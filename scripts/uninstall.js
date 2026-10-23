@@ -13,6 +13,7 @@ const fs = require("fs");
 const path = require("path");
 const os = require("os");
 const core = require("../patch-core");
+const backgroundSubagents = require("../background-subagents");
 
 const flagFile = path.join(os.homedir(), ".kilo-qol-patch-uninstalled");
 try {
@@ -79,6 +80,13 @@ for (const dir of dirs) {
   restore(path.join(dir, "extension.js"), core.removeHostFromString);
   const pkg = path.join(dir, "..", "package.json");
   if (fs.existsSync(pkg)) core.applyOpenInTabTitle(pkg, false);
+}
+
+try {
+  const result = backgroundSubagents.disable(backgroundSubagents.configDir());
+  if (result.changed) log("removed extension-managed background-subagent rule");
+} catch (error) {
+  log(`could not remove background-subagent rule: ${error && error.message}`);
 }
 
 log("done");
