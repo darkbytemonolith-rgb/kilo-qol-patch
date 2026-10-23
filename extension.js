@@ -204,10 +204,30 @@ function doApply() {
   if (!wv) return { state: "notfound" };
   let src = fs.readFileSync(wv, "utf8");
   const bak = wv + ".qolpatch.bak";
-  if (!fs.existsSync(bak)) fs.writeFileSync(bak, src, "utf8");
-  if (core.isPatched(src) && fs.existsSync(bak)) {
-    src = fs.readFileSync(bak, "utf8");
+
+  // If an older patch is present, cleanly restore to clean stock source first
+  if (core.isPatched(src)) {
+    if (fs.existsSync(bak)) {
+      try {
+        const bakSrc = fs.readFileSync(bak, "utf8");
+        if (!core.isPatched(bakSrc)) {
+          src = bakSrc;
+        } else {
+          src = core.removeFromString(src);
+        }
+      } catch (_) {
+        src = core.removeFromString(src);
+      }
+    } else {
+      src = core.removeFromString(src);
+    }
   }
+
+  // Ensure backup holds clean stock content
+  if (!fs.existsSync(bak) || core.isPatched(fs.readFileSync(bak, "utf8"))) {
+    fs.writeFileSync(bak, src, "utf8");
+  }
+
   const conf = cfg();
   const res = core.applyToString(src, conf);
   if (!res.ok) return { state: "noanchors", path: wv, anchors: anchorsOf(res) };
@@ -443,7 +463,43 @@ function startWatcher(context) {
   } catch (_) {}
 }
 
+function cleanupOldExtensionVersions(context) {
+  try {
+    const extDir = context.extensionPath;
+    const parentDir = path.dirname(extDir);
+    const currentName = path.basename(extDir).toLowerCase();
+    const candidateRoots = [
+      parentDir,
+      path.join(os.homedir(), ".vscode", "extensions"),
+      path.join(os.homedir(), ".vscode-insiders", "extensions"),
+      path.join(os.homedir(), ".cursor", "extensions"),
+    ];
+    const seenRoots = new Set();
+    for (const root of candidateRoots) {
+      if (!root || seenRoots.has(root) || !fs.existsSync(root)) continue;
+      seenRoots.add(root);
+      try {
+        for (const name of fs.readdirSync(root)) {
+          const lower = name.toLowerCase();
+          if (
+            (lower.startsWith("dark-byte.kilo-qol-patch-") || lower.startsWith("kilo-qol-patch-")) &&
+            lower !== currentName
+          ) {
+            const target = path.join(root, name);
+            try {
+              fs.rmSync(target, { recursive: true, force: true });
+              console.log(`[kilo-qol-patch] Cleaned up legacy version folder: ${target}`);
+            } catch (_) {}
+          }
+        }
+      } catch (_) {}
+    }
+  } catch (_) {}
+}
+
 async function onStartup(context) {
+  cleanupOldExtensionVersions(context);
+
   // Activation itself proves the extension is installed; a stale uninstall flag
   // (written by the old version's hook during an in-place upgrade) must not block patching.
   const flagFile = path.join(os.homedir(), ".kilo-qol-patch-uninstalled");
@@ -451,7 +507,7 @@ async function onStartup(context) {
     try { fs.unlinkSync(flagFile); } catch (_) {}
   }
   const backgroundRuleChanged = syncBackgroundSubagents();
-  const currentVersion = context.extension?.packageJSON?.version || "0.8.0";
+  const currentVersion = context.extension?.packageJSON?.version || "1.3.7";
   const lastVersion = context.globalState.get("installedVersion");
   const isNewInstallOrUpdate = lastVersion !== currentVersion;
 
@@ -462,8 +518,8 @@ async function onStartup(context) {
     return;
   }
 
-  // 1. Fresh install or version upgrade: auto-patch and auto-reload immediately without asking
-  if (isNewInstallOrUpdate) {
+  // 1. Fresh install, version upgrade, or older patch applied on disk (st.old):
+  if (isNewInstallOrUpdate || st.old) {
     await context.globalState.update("installedVersion", currentVersion);
     const r = doApply();
     if (r.state === "patched") {
